@@ -53,7 +53,7 @@ var imageRepository = new function() {
 
   // Set images source
   this.background.src = 'img/gbg.jpg';
-  this.character.src = 'img/mario.png';
+  this.character.src = 'img/sm.png';
 }
 
 function Drawable() {
@@ -79,11 +79,10 @@ function Background() {
 Background.prototype = new Drawable();
 
 function Character() {
-  this.speed = 5;
-  this.right = false;
-  this.left = false;
-  this.up = false;
-  this.down = false;
+  this.facing = "right";
+  this.jumping = false;
+  this.jumpSpeed = 10;
+  this.speed = 4;
 
   this.init = function(destX, destY, destW, destH) {
     this.x = destX;
@@ -119,28 +118,42 @@ function Character() {
         // Left Key
         if (KEY_STATUS.left) {
           this.left = true;
-          if (this.srcX < 120) {
-            this.srcX = 150;
+          if (this.facing === "right") {
+            this.facing = "left";
+            this.srcX = 181;
           } else {
-            this.srcX -= 30;
-          }
-          this.x -= this.speed;
-          if (this.x <= 0) { //---> Keep user inside the screen
-            this.x = 0;
+            if (!this.jumping) {
+              if (this.srcX === 91) {
+                this.srcX = 151;
+              } else {
+                this.srcX -= 30;
+              }
+            }
+            this.x -= this.speed;
+            if (this.x <= 0) { //---> Keep user inside the screen
+              this.x = 0;
+            }
           }
         }
 
         // Right Key
         if (KEY_STATUS.right) {
           this.right = true;
-          if (this.srcX > 270) {
-            this.srcX = 240;
+          if (this.facing === "left") {
+            this.facing = "right";
+            this.srcX = 211;
           } else {
-            this.srcX += 30;
-          }
-          this.x += this.speed;
-          if (this.x >= this.canvasWidth - this.width) {
-            this.x = this.canvasWidth - this.width;
+            if (!this.jumping) {
+              if (this.srcX === 301) {
+                this.srcX = 241;
+              } else {
+                this.srcX += 30;
+              }
+            }
+            this.x += this.speed;
+            if (this.x >= this.canvasWidth - this.width) {
+              this.x = this.canvasWidth - this.width;
+            }
           }
         }
 
@@ -154,9 +167,35 @@ function Character() {
 
         // Up Key
         if (KEY_STATUS.up) {
-          this.y -= this.speed;
-          if (this.y <= 0) { //---> Keep user inside the screen
-            this.y = 0;
+          if (this.jumping) {
+            if (this.y >= 373) {
+              this.y = 373;
+              this.jumpSpeed = 10;
+              this.jumping = false;
+              if (this.facing === "right") {
+                this.srcX = 211;
+              } else {
+                this.srcX = 181;
+              }
+            } else {
+              this.y -= this.jumpSpeed;
+              if (this.y <= 0) { //---> Keep user inside the screen
+                this.y = 0;
+              }
+              this.jumpSpeed -= 1;
+            }
+          } else {
+            this.jumping = true;
+            if (this.facing === "right") {
+              this.srcX = 359;
+            } else {
+              this.srcX = 29;
+            }
+            this.y -= this.jumpSpeed;
+            if (this.y <= 0) { //---> Keep user inside the screen
+              this.y = 0;
+            }
+            this.jumpSpeed -= 1;
           }
         }
 
@@ -165,23 +204,46 @@ function Character() {
       }
 
       // Check if key was released
-      if (KEY_STATUS.right === false && this.right === true) {
-        // Erase the character so we can redraw him in a new position
-        this.context.clearRect(this.x, this.y, this.width, this.height);
+      if (!KEY_STATUS.right && this.right) {
+        if (!this.jumping) {
+          this.right = false;
+          this.srcX = 211;
 
-        this.right = false;
-        this.srcX = 210;
-
-        // Redraw the character
-        this.draw(this.srcX, this.srcY, this.srcW, this.srcH);
+          // Redraw the character
+          this.draw(this.srcX, this.srcY, this.srcW, this.srcH);
+        }
       }
 
-      if (KEY_STATUS.left === false && this.left === true) {
+      if (!KEY_STATUS.left && this.left) {
+        if (!this.jumping) {
+          this.left = false;
+          this.srcX = 181;
+
+          // Redraw the character
+          this.draw(this.srcX, this.srcY, this.srcW, this.srcH);
+        }
+      }
+
+      if (!KEY_STATUS.up && this.jumping) {
         // Erase the character so we can redraw him in a new position
         this.context.clearRect(this.x, this.y, this.width, this.height);
 
-        this.left = false;
-        this.srcX = 180;
+        if (this.y >= 373) {
+          this.y = 373;
+          this.jumpSpeed = 10;
+          this.jumping = false;
+          if (this.facing === "right") {
+            this.srcX = 211;
+          } else {
+            this.srcX = 181;
+          }
+        } else {
+          this.y -= this.jumpSpeed;
+          if (this.y <= 0) { //---> Keep user inside the screen
+            this.y = 0;
+          }
+          this.jumpSpeed -= 1;
+        }
 
         // Redraw the character
         this.draw(this.srcX, this.srcY, this.srcW, this.srcH);
@@ -194,8 +256,8 @@ Character.prototype = new Drawable();
 
 function Game() {
   // Character start position coordinates
-  var charStartX = 300;
-  var charStartY = 375;
+  var charStartX = 100;
+  var charStartY = 373;
   this.init = function() {
     this.bgCanvas = document.getElementById('background');
     this.charCanvas = document.getElementById('character');
@@ -221,7 +283,7 @@ function Game() {
       this.character = new Character();
 
       // Set the initial position of the character
-      this.character.init(charStartX, charStartY, 15, 15);
+      this.character.init(charStartX, charStartY, 17, 16);
       return true;
     } else {
       return false;
@@ -229,7 +291,7 @@ function Game() {
   }
 
   this.start = function() {
-    this.character.draw(210, 0, 15, 15);
+    this.character.draw(211, 0, 17, 16);
     animate();
   };
 }
