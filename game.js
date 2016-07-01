@@ -1,3 +1,5 @@
+//Super duper test of git functions and commits
+
 KEY_CODES = {
   37: 'left',
   38: 'up',
